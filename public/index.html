@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piedra, Papel o Tijera</title>
+    <script src="./juego.js"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <h1>Piedra, Papel o Tijera</h1>
+
+    <!-- Selección de jugador -->
+    <div id="seleccionJugador">
+        <h2>Selecciona jugador</h2>
+        <button onclick="mostrarFormulario('jugador1')">Jugador 1: Crear Partida</button><br><br>
+        <button onclick="mostrarFormulario('jugador2')">Jugador 2: Unirse Partida</button>
+    </div>
+
+    <!-- Formulario para crear partida -->
+    <div id="formJugador1" style="display:none;">
+        <h3>Crear Partida (Jugador 1)</h3>
+        <input id="codigoPartidaInput" placeholder="Ingresa código de la partida" required><br>
+        <button onclick="crearPartida()">Crear Partida</button>
+        <div id="codigoPartida1" style="display:none;">
+            <h4>Código de la partida:</h4>
+            <p id="codigoGenerado"></p>
+        </div>
+        <button onclick="nuevaeleccion()"> 🔙 Volver a Selección de Jugador</button>
+        <br><br>
+    </div>
+
+    <!-- Formulario para unirse a partida -->
+    <div id="formJugador2" style="display:none;">
+        <h3>Unirse Partida (Jugador 2)</h3>
+        <input id="codigoPartida" placeholder="Código de la partida" required><br>
+        <button onclick="unirsePartida()">Unirse</button>
+
+        <br><br>
+        <button onclick="nuevaeleccion()"> 🔙 Volver a Selección de Jugador</button>
+    </div>
+
+    <!-- Sección de juego -->
+    <div id="juego" style="display:none;">
+        <h3 id="jugadorActivo">Jugador: </h3>
+
+        <h3>Realizar Movimiento</h3>
+        <button onclick="realizarMovimiento('piedra')">Piedra 👊🏼</button>
+        <button onclick="realizarMovimiento('papel')">Papel ✋🏻</button>
+        <button onclick="realizarMovimiento('tijera')">Tijera ✌🏻</button>
+
+        <br><br>
+        <button onclick="nuevaeleccion()"> 🔙 Volver a Selección de Jugador</button>
+    </div>
+
+    <!-- Sección de estado y finalizar partida -->
+    <div id="menuPartida" style="display:none;">
+        <h3>Consultar Estado</h3>
+        <button onclick="consultarEstado()">Estado de la Partida 🔍</button>
+
+        <h3>Finalizar Partida</h3>
+        <button onclick="acabarPartida()">Finalizar 🏁</button>
+    </div>
+</body>
+</html>
