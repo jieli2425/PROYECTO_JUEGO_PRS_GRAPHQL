@@ -1,135 +1,221 @@
-const graphqlEndpoint = "http://localhost:4000/graphql";
+const baseUrl = 'http://localhost:4000/graphql';
+let jugadorActivo = '';
+let idPartida = '';
 
-// Mostrar formularios
 function mostrarFormulario(jugador) {
-    document.getElementById("seleccionJugador").style.display = "none";
-    document.getElementById(`form${jugador}`).style.display = "block";
-}
-
-// Volver a la selección de jugador
-function volverSeleccion() {
-    document.getElementById("seleccionJugador").style.display = "block";
-    document.getElementById("formJugador1").style.display = "none";
-    document.getElementById("formJugador2").style.display = "none";
-}
-
-// Crear partida
-async function crearPartida() {
-    const codigoPartida = document.getElementById("codigoPartidaInput").value;
-
-    const query = `
-        mutation {
-            iniciarJoc(idPartida: "${codigoPartida}", jugador: "jugador1") {
-                idPartida
-                estado
-            }
-        }
-    `;
-
-    const response = await fetch(graphqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-    });
-
-    const result = await response.json();
-    if (result.data) {
-        alert("Partida creada. Esperando al Jugador 2.");
-        document.getElementById("codigoGenerado").innerText = codigoPartida;
-        document.getElementById("codigoPartida1").style.display = "block";
+    document.getElementById('seleccionJugador').style.display = 'none';
+    if (jugador === 'jugador1') {
+        document.getElementById('formJugador1').style.display = 'block';
     } else {
-        alert("Error al crear la partida");
+        document.getElementById('formJugador2').style.display = 'block';
     }
 }
 
-// Unirse a partida
-async function unirsePartida() {
-    const codigoPartida = document.getElementById("codigoPartida").value;
+function reiniciarInterfaz() {
+    document.getElementById('seleccionJugador').style.display = 'block';
+    document.getElementById('formJugador1').style.display = 'none';
+    document.getElementById('formJugador2').style.display = 'none';
+    document.getElementById('juego').style.display = 'none';
+    document.getElementById('codigoPartida1').style.display = 'none';
+    document.getElementById('menuPartida').style.display = 'none';
+    document.getElementById('codigoGenerado').innerHTML = '';
+    document.getElementById('jugadorActivo').innerHTML = 'Jugador:';
 
-    const query = `
-        mutation {
-            iniciarJoc(idPartida: "${codigoPartida}", jugador: "jugador2") {
-                idPartida
-                estado
-            }
-        }
-    `;
+    jugadorActivo = null;
+    idPartida = null;
 
-    const response = await fetch(graphqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-    });
-
-    const result = await response.json();
-    if (result.data) {
-        alert("Te has unido a la partida.");
-        document.getElementById("juego").style.display = "block";
-    } else {
-        alert("Error al unirse a la partida");
-    }
+    document.getElementById('resultado').style.display = 'none';
+    document.getElementById('mensajeResultado').innerText = '';
 }
 
-// Realizar movimiento
+function nuevaeleccion() {
+    reiniciarInterfaz();
+}
+
 async function realizarMovimiento(eleccion) {
-    const codigoPartida = document.getElementById("codigoPartidaInput").value;
-
     const query = `
-        mutation {
-            moureJugador(idPartida: "${codigoPartida}", jugador: "jugador1", eleccion: "${eleccion}")
+                mutation {
+                    moureJugador(idPartida: "${idPartida}", jugador: "${jugadorActivo}", eleccion: "${eleccion}")
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+
+        alert(data.moureJugador);
+
+        await consultarEstado();
+
+        const partidaTerminada = await verificarFinPartida();
+        if (partidaTerminada) {
+            reiniciarInterfaz();
         }
-    `;
-
-    const response = await fetch(graphqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-    });
-
-    const result = await response.json();
-    alert(result.data.moureJugador || "Error en el movimiento");
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
-// Consultar estado de la partida
+async function crearPartida() {
+    idPartida = document.getElementById('codigoPartidaInput').value.trim();
+
+    if (!idPartida || isNaN(idPartida)) {
+        alert('Por favor ingresa un código válido.');
+        return;
+    }
+
+    const query = `
+                mutation {
+                    iniciarJoc(idPartida: "${idPartida}", jugador: "jugador1") {
+                        idPartida
+                        estado
+                        jugador1
+                        jugador2
+                    }
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+        alert('Partida creada con éxito');
+        document.getElementById('codigoPartida1').style.display = 'block';
+        document.getElementById('codigoGenerado').innerHTML = idPartida;
+
+        document.getElementById('formJugador1').style.display = 'none';
+        document.getElementById('juego').style.display = 'block';
+        jugadorActivo = 'jugador1';
+
+        document.getElementById('jugadorActivo').innerHTML = 'Jugador 1';
+        document.getElementById('menuPartida').style.display = 'block';
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function unirsePartida() {
+    idPartida = document.getElementById('codigoPartida').value.trim();
+
+    if (!idPartida || isNaN(idPartida)) {
+        alert('Por favor ingresa un código de partida válido.');
+        return;
+    }
+
+    const query = `
+                mutation {
+                    iniciarJoc(idPartida: "${idPartida}", jugador: "jugador2") {
+                        idPartida
+                        estado
+                        jugador1
+                        jugador2
+                    }
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+        alert('Jugador 2 se ha unido a la partida.');
+
+        document.getElementById('formJugador2').style.display = 'none';
+        document.getElementById('juego').style.display = 'block';
+        jugadorActivo = 'jugador2';
+
+        document.getElementById('jugadorActivo').innerHTML = 'Jugador 2';
+        document.getElementById('menuPartida').style.display = 'block';
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function realizarMovimiento(eleccion) {
+    const query = `
+                mutation {
+                    moureJugador(idPartida: "${idPartida}", jugador: "${jugadorActivo}", eleccion: "${eleccion}")
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+        if (data.moureJugador.includes('No es tu turno')) {
+            alert(data.moureJugador);
+            return;
+        }
+
+        alert(data.moureJugador);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
 async function consultarEstado() {
-    const codigoPartida = document.getElementById("codigoPartidaInput").value;
-
     const query = `
-        query {
-            consultarEstatPartida(idPartida: "${codigoPartida}") {
-                estado
-                jugador1
-                jugador2
-            }
-        }
-    `;
+                query {
+                    consultarEstatPartida(idPartida: "${idPartida}") {
+                        estado
+                        jugador1
+                        jugador2
+                        victorias1
+                        victorias2
+                    }
+                }
+            `;
 
-    const response = await fetch(graphqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-    });
+    try {
+        const data = await realizarPeticionGraphQL(query);
 
-    const result = await response.json();
-    alert(JSON.stringify(result.data.consultarEstatPartida));
+        const partida = data.consultarEstatPartida;
+        document.getElementById('resultado').style.display = 'block';
+        document.getElementById('mensajeResultado').innerText = `
+            Estado de la partida: ${partida.estado}
+            Victorias Jugador 1: ${partida.victorias1}
+            Victorias Jugador 2: ${partida.victorias2}
+        `;
+
+        return partida;
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
-// Finalizar partida
-async function finalizarPartida() {
-    const codigoPartida = document.getElementById("codigoPartidaInput").value;
-
+async function verificarFinPartida() {
     const query = `
-        mutation {
-            acabarJoc(idPartida: "${codigoPartida}")
+                query {
+                    consultarEstatPartida(idPartida: "${idPartida}") {
+                        estado
+                        victorias1
+                        victorias2
+                    }
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+        const partida = data.consultarEstatPartida;
+
+        if (partida.victorias1 === 3 || partida.victorias2 === 3) {
+            alert(`¡La partida ha terminado! ${
+                partida.victorias1 === 3 ? 'Jugador 1' : 'Jugador 2'
+            } ha ganado con 3 victorias.`);
+            await acabarPartida();
+            return true;
         }
-    `;
 
-    const response = await fetch(graphqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-    });
+        return false;
+    } catch (error) {
+        console.error('Error al verificar el fin de la partida:', error);
+    }
+}
 
-    const result = await response.json();
-    alert(result.data.acabarJoc || "Error al finalizar la partida");
+async function acabarPartida() {
+    const query = `
+                mutation {
+                    acabarJoc(idPartida: "${idPartida}")
+                }
+            `;
+
+    try {
+        const data = await realizarPeticionGraphQL(query);
+        alert(data.acabarJoc);
+        reiniciarInterfaz();
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
