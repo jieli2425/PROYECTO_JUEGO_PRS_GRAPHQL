@@ -3,16 +3,14 @@ const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const path = require('path');
 
-// Opciones para el juego
 const opciones = {
   piedra: { piedra: "empate", papel: "perdido", tijera: "victoria" },
   papel: { papel: "empate", tijera: "perdido", piedra: "victoria" },
   tijera: { tijera: "empate", piedra: "perdido", papel: "victoria" }
 };
 
-let partidas = {}; // { idPartida: { jugador1, jugador2, eleccion1, eleccion2, estado, turno } }
+let partidas = {};
 
-// Definición del esquema de GraphQL
 const schema = buildSchema(`
   type Partida {
     idPartida: String
@@ -36,7 +34,6 @@ const schema = buildSchema(`
   }
 `);
 
-// Resolvers
 const root = {
   consultarEstatPartida: ({ idPartida }) => {
     const partida = partidas[idPartida];
