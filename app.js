@@ -3,12 +3,6 @@ const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const path = require('path');
 
-const opciones = {
-  piedra: { piedra: "empate", papel: "perdido", tijera: "victoria" },
-  papel: { papel: "empate", tijera: "perdido", piedra: "victoria" },
-  tijera: { tijera: "empate", piedra: "perdido", papel: "victoria" }
-};
-
 let partidas = {};
 
 const schema = buildSchema(`
@@ -37,7 +31,7 @@ const schema = buildSchema(`
 const arrel = {
   consultarEstatPartida: ({ idPartida }) => {
     const partida = partidas[idPartida];
-    if (!partida) throw new Error("Partida no encontrada");
+    if (!partida) return new Error("Partida no encontrada");
 
     if (partida.eleccion1 && partida.eleccion2) {
       const resultado = evaluarResultado(partida, idPartida);
@@ -51,7 +45,7 @@ const arrel = {
 
   iniciarJoc: ({ idPartida, jugador }) => {
     if (!idPartida || !jugador) {
-      throw new Error("Faltan datos: idPartida o jugador");
+      return new Error("Faltan datos: idPartida o jugador");
     }
 
     if (!partidas[idPartida]) {
@@ -69,7 +63,7 @@ const arrel = {
         };
         return partidas[idPartida];
       } else {
-        throw new Error("Partida no encontrada");
+        return new Error("Partida no encontrada");
       }
     }
 
@@ -79,19 +73,19 @@ const arrel = {
       return partidas[idPartida];
     }
 
-    throw new Error("La partida ya está completa o no puedes unirte como este jugador");
+    return new Error("La partida ya está completa o no puedes unirte como este jugador");
   },
 
   moureJugador: ({ idPartida, jugador, eleccion }) => {
     if (!["piedra", "papel", "tijera"].includes(eleccion)) {
-      throw new Error("Movimiento inválido");
+      return new Error("Movimiento inválido");
     }
 
     const partida = partidas[idPartida];
-    if (!partida) throw new Error("Partida no encontrada");
+    if (!partida) return new Error("Partida no encontrada");
 
     if (jugador !== partida.turno) {
-      throw new Error("No es tu turno. Espera al otro jugador.");
+      return new Error("No es tu turno. Espera al otro jugador.");
     }
 
     if (jugador === "jugador1") {
@@ -99,7 +93,7 @@ const arrel = {
     } else if (jugador === "jugador2") {
       partida.eleccion2 = eleccion;
     } else {
-      throw new Error("Jugador no pertenece a esta partida");
+      return new Error("Jugador no pertenece a esta partida");
     }
 
     partida.turno = jugador === "jugador1" ? "jugador2" : "jugador1";
@@ -123,17 +117,27 @@ const arrel = {
   },
 
   acabarJoc: ({ idPartida }) => {
-    if (!partidas[idPartida]) throw new Error("Partida no encontrada");
+    if (!partidas[idPartida]) return new Error("Partida no encontrada");
     delete partidas[idPartida];
     return "Partida eliminada con éxito";
   },
 };
 
-
 function evaluarResultado(partida, idPartida) {
-  const resultado = opciones[partida.eleccion1][partida.eleccion2];
-  if (resultado === "empate") return "Empate";
+  let resultado;
+  switch (partida.eleccion1) {
+    case "piedra":
+      resultado = partida.eleccion2 === "piedra" ? "empate" : partida.eleccion2 === "papel" ? "perdido" : "victoria";
+      break;
+    case "papel":
+      resultado = partida.eleccion2 === "papel" ? "empate" : partida.eleccion2 === "tijera" ? "perdido" : "victoria";
+      break;
+    case "tijera":
+      resultado = partida.eleccion2 === "tijera" ? "empate" : partida.eleccion2 === "piedra" ? "perdido" : "victoria";
+      break;
+  }
 
+  if (resultado === "empate") return "Empate";
   if (resultado === "victoria") {
     partidas[idPartida].victorias1++;
     return `${partida.jugador1} gana`;
