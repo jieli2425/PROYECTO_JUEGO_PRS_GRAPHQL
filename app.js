@@ -34,7 +34,7 @@ const schema = buildSchema(`
   }
 `);
 
-const root = {
+const arrel = {
   consultarEstatPartida: ({ idPartida }) => {
     const partida = partidas[idPartida];
     if (!partida) throw new Error("Partida no encontrada");
@@ -157,7 +157,7 @@ app.use(
   '/graphql',
   graphqlHTTP({
     schema,
-    rootValue: root,
+    rootValue: arrel,
     graphiql: true,
   })
 );
@@ -168,5 +168,4 @@ app.get('/', (req, res) => {
 
 app.listen(4000, () => {
   console.log(`Servidor de GraphQL ejecutándose en http://localhost:4000/graphql`);
-  console.log(`Frontend disponible en http://localhost:4000`);
 });
